@@ -1,0 +1,87 @@
+plugins {
+    id 'org.springframework.boot' version '2.2.2.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'java'
+    id 'idea'
+}
+
+wrapper {
+    gradleVersion = '6.0.1'
+}
+
+group = 'com.szychan'
+version = '1.0.0'
+sourceCompatibility = '11'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web:2.2.5.RELEASE'
+    implementation 'org.joda:joda-money:1.0.1'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa:2.2.5.RELEASE'
+    implementation 'org.flywaydb:flyway-core:6.3.1'
+    implementation 'org.postgresql:postgresql:42.2.9'
+
+//    implementation group: 'org.flywaydb.flyway-test-extensions', name: 'flyway-spring-test', version: '5.0.1'
+
+    implementation group: 'io.zonky.test', name: 'embedded-database-spring-test', version: '1.5.3'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+    implementation 'org.springframework.boot:spring-boot-starter-test:2.2.5.RELEASE'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+idea {
+    module {
+        sourceDirs -= file('src/integrationTest/java')
+        testSourceDirs += file('src/integrationTest/java')
+    }
+}
+
+sourceSets {
+    integrationTest {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir "$projectDir/src/integrationTest/java"
+        }
+        resources.srcDir "$projectDir/src/integrationTest/resources"
+    }
+}
+
+configurations {
+    integrationTestImplementation.extendsFrom implementation
+    integrationTestRuntimeOnly.extendsFrom runtimeOnly
+}
+
+task integrationTest(type: Test) {
+    useJUnitPlatform()
+    description = 'Runs integration tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    mustRunAfter test
+}
+
+configurations.all {
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+        if (details.requested.group == 'io.zonky.test.postgres') {
+            details.useVersion '11.13.0'
+        }
+    }
+}
